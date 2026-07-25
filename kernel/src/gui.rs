@@ -15,6 +15,7 @@ pub struct Color {
     pub b: u8,
 }
 
+#[allow(dead_code)]
 impl Color {
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
@@ -24,28 +25,16 @@ impl Color {
         Self::rgb(255, 255, 255)
     }
 
-    pub const fn black() -> Self {
-        Self::rgb(0, 0, 0)
-    }
-
-    pub const fn red() -> Self {
-        Self::rgb(255, 0, 0)
-    }
-
-    pub const fn green() -> Self {
-        Self::rgb(0, 255, 0)
-    }
-
-    pub const fn blue() -> Self {
-        Self::rgb(0, 0, 255)
-    }
-
     pub const fn gray() -> Self {
         Self::rgb(128, 128, 128)
     }
 
     pub const fn dark_gray() -> Self {
         Self::rgb(64, 64, 64)
+    }
+
+    pub const fn green() -> Self {
+        Self::rgb(0, 180, 0)
     }
 }
 
@@ -106,6 +95,7 @@ impl Widget {
         }
     }
 
+    #[allow(dead_code)]
     pub fn contains(&self, mx: usize, my: usize) -> bool {
         let rect = match self {
             Widget::Button { rect, .. } => rect,

@@ -1,5 +1,4 @@
 use crate::framebuffer::FrameBuffer;
-use uefi::boot;
 
 #[derive(Debug, Clone, Copy)]
 pub struct MouseState {

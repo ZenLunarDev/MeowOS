@@ -26,7 +26,7 @@ pub fn save_screenshot(fb: &FrameBuffer, filename: &str) -> Result<(), &'static 
     let bmp_size = 14 + 40 + row_size * fb.height;
     
     let layout = Layout::from_size_align(bmp_size, 1).map_err(|_| "layout failed")?;
-    let buf = alloc(layout);
+    let buf = unsafe { alloc(layout) };
     if buf.is_null() {
         return Err("alloc failed");
     }
@@ -71,6 +71,6 @@ pub fn save_screenshot(fb: &FrameBuffer, filename: &str) -> Result<(), &'static 
     let written = unsafe { core::slice::from_raw_parts(buf, bmp_size) };
     regular.write(written).map_err(|_| "write failed")?;
 
-    dealloc(buf, layout);
+    unsafe { dealloc(buf, layout) };
     Ok(())
 }
