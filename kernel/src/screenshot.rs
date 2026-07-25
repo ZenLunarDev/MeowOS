@@ -10,15 +10,17 @@ pub fn save_screenshot(fb: &FrameBuffer, filename: &str) -> Result<(), &'static 
     let fs_handle = boot::get_handle_for_protocol::<SimpleFileSystem>()
         .map_err(|_| "no filesystem")?;
     let mut fs = boot::open_protocol_exclusive::<SimpleFileSystem>(fs_handle)
-        .map_err(|_| "open fs failed")?;
+        .map_err(|_ | "open fs failed")?;
     let mut root = fs.open_volume().map_err(|_| "open volume failed")?;
 
     let path = uefi::CString16::try_from(filename).map_err(|_| "bad filename")?;
-    let mut file = root.open(
+    let file = root.open(
         &*path,
-        FileMode::CREATE,
+        FileMode::CreateReadWrite,
         FileAttribute::empty(),
     ).map_err(|_| "open file failed")?;
+
+    let mut regular = file.into_regular_file().ok_or("not regular file")?;
 
     let row_size = ((fb.width * 3 + 3) & !3) as usize;
     let bmp_size = 14 + 40 + row_size * fb.height;
@@ -67,7 +69,7 @@ pub fn save_screenshot(fb: &FrameBuffer, filename: &str) -> Result<(), &'static 
     }
 
     let written = unsafe { core::slice::from_raw_parts(buf, bmp_size) };
-    file.write(written).map_err(|_| "write failed")?;
+    regular.write(written).map_err(|_| "write failed")?;
 
     dealloc(buf, layout);
     Ok(())
