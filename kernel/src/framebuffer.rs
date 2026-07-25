@@ -279,8 +279,6 @@ impl FrameBuffer {
             for col in 0..7 {
                 if (byte >> (6 - col)) & 1 == 1 {
                     self.draw_pixel(x + col, y + row, r, g, b);
-                } else {
-                    self.draw_pixel(x + col, y + row, 40, 40, 40);
                 }
             }
         }
