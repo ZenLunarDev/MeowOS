@@ -3,7 +3,7 @@ use alloc::alloc::{alloc, dealloc, Layout};
 
 use crate::framebuffer::FrameBuffer;
 use uefi::boot;
-use uefi::proto::media::file::{File, FileAttribute, FileMode, FileHandle};
+use uefi::proto::media::file::{File, FileAttribute, FileMode};
 use uefi::proto::media::fs::SimpleFileSystem;
 
 pub fn save_screenshot(fb: &FrameBuffer, filename: &str) -> Result<(), &'static str> {
@@ -67,7 +67,7 @@ pub fn save_screenshot(fb: &FrameBuffer, filename: &str) -> Result<(), &'static 
     }
 
     let written = unsafe { core::slice::from_raw_parts(buf, bmp_size) };
-    File::write(&mut *file, written).map_err(|_| "write failed")?;
+    file.write(written).map_err(|_| "write failed")?;
 
     dealloc(buf, layout);
     Ok(())
