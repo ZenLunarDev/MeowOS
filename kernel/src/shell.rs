@@ -1,4 +1,5 @@
 use crate::framebuffer::FrameBuffer;
+use crate::gui::Widget;
 use core::fmt::Write;
 use core::time::Duration;
 use uefi::{boot};
@@ -13,7 +14,7 @@ fn shell_loop(
     let mut rect_count: u32 = 0;
 
     let _ = output.reset(false);
-    writeln!(output, "MewoOS Kernel v0.1").ok();
+    writeln!(output, "MewoOS Kernel v0.2").ok();
     writeln!(output, "100% Rust | no underlying OS").ok();
     writeln!(output, "Type 'help' for commands\r\n").ok();
 
@@ -65,6 +66,9 @@ fn shell_loop(
                 writeln!(output, "    rect   - draw random rects").ok();
                 writeln!(output, "    clear  - clear text console").ok();
                 writeln!(output, "    cls    - clear framebuffer").ok();
+                writeln!(output, "    gui    - show widget demo").ok();
+                writeln!(output, "    mouse  - mouse status").ok();
+                writeln!(output, "    shot   - save screenshot").ok();
                 writeln!(output, "    exit   - halt").ok();
             }
             "rect" => {
@@ -92,6 +96,41 @@ fn shell_loop(
             "cls" => {
                 fb.clear(0, 0, 0);
                 writeln!(output, "  fb cleared").ok();
+            }
+            "gui" => {
+                fb.draw_text(50, 280, "Widgets Demo:", 255, 255, 255);
+                let widgets = [
+                    Widget::Button {
+                        rect: gui::Rect { x: 50, y: 300, w: 120, h: 30 },
+                        label: "Submit",
+                        pressed: false,
+                    },
+                    Widget::Checkbox {
+                        rect: gui::Rect { x: 200, y: 300, w: 120, h: 20 },
+                        label: "Enable",
+                        checked: true,
+                    },
+                    Widget::ProgressBar {
+                        rect: gui::Rect { x: 50, y: 350, w: 300, h: 20 },
+                        percent: 65,
+                    },
+                ];
+                for w in &widgets {
+                    w.draw(fb);
+                }
+                writeln!(output, "  gui demo drawn").ok();
+            }
+            "mouse" => {
+                match mouse::init_mouse() {
+                    Some(_) => writeln!(output, "  mouse stubbed").ok(),
+                    None => writeln!(output, "  mouse init failed").ok(),
+                }
+            }
+            "shot" => {
+                match screenshot::save_screenshot(fb, "shot.bmp") {
+                    Ok(_) => writeln!(output, "  saved shot.bmp").ok(),
+                    Err(e) => writeln!(output, "  screenshot failed").ok(),
+                }
             }
             "exit" => {
                 writeln!(output, "  halting...").ok();
