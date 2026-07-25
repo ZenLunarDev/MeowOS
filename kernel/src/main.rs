@@ -10,8 +10,10 @@ mod gui;
 mod mouse;
 mod screenshot;
 mod text_shell;
+mod window_manager;
 
 use framebuffer::FrameBuffer;
+use window_manager::WindowManager;
 
 static mut FB: FrameBuffer = FrameBuffer::empty();
 
@@ -23,11 +25,16 @@ fn main() -> Status {
     unsafe {
         FB.init().expect("FB init failed");
 
-        FB.draw_rect(100, 100, 200, 150, 0xFF, 0x33, 0x33);
-        FB.draw_rect(330, 120, 200, 150, 0x33, 0xFF, 0x33);
-        FB.draw_rect(560, 140, 200, 150, 0x33, 0x33, 0xFF);
+        FB.draw_rect(0, 0, FB.width(), FB.height(), 30, 30, 30);
 
-        FB.draw_text(50, 50, "MeowOS Kernel v0.3", 255, 255, 255);
+        let mut wm = WindowManager::new();
+        let app1 = wm.add(60, 50, 340, 220, "MeowOS Terminal", window_manager::Color::rgb(40, 40, 45));
+        let app2 = wm.add(420, 80, 340, 220, "Notepad", window_manager::Color::rgb(35, 35, 40));
+        let app3 = wm.add(240, 220, 340, 220, "Settings", window_manager::Color::rgb(45, 35, 35));
+
+        wm.draw_all(&mut FB);
+
+        FB.draw_text(20, FB.height() - 30, "Taskbar: Start | Apps minimized: 0 | Clock: 00:00", 220, 220, 220);
 
         let stdin_handle = boot::get_handle_for_protocol::<uefi::proto::console::text::Input>().unwrap();
         let mut input = boot::open_protocol_exclusive::<uefi::proto::console::text::Input>(stdin_handle).unwrap();
