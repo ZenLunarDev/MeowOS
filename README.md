@@ -101,12 +101,6 @@ Use `boot.ps1` from the project root:
 .\boot.ps1 -All
 ```
 
-If your `cd` lands in a different folder, run from the folder that contains `boot.ps1`:
-
-```powershell
-cd C:\Users\กรมท\Documents\MewoOS
-```
-
 ## Shell commands
 
 After boot, the firmware loads `BOOTX64.EFI` and the shell starts automatically.
