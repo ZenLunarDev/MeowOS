@@ -12,7 +12,7 @@ pub fn save_screenshot(fb: &FrameBuffer, filename: &str) -> Result<(), &'static 
 
     let path = uefi::CString16::try_from(filename).map_err(|_| "bad filename")?;
     let mut file = root.open(
-        uefi::cstr16!("{:w<}", path, 100),
+        &*path,
         FileMode::CreateReadWrite as u64,
         FileAttribute::empty(),
     ).map_err(|_| "open file failed")?;

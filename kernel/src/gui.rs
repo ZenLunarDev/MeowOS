@@ -81,7 +81,7 @@ impl Widget {
                         }
                     }
                 }
-                let _ = fb.draw_text(rect.x + 4, rect.y + 4, label, Color::white());
+                let _ = fb.draw_text(rect.x + 4, rect.y + 4, label, 255, 255, 255);
             }
             Widget::Checkbox { rect, label, checked } => {
                 let box_color = if *checked { Color::green() } else { Color::dark_gray() };
@@ -90,7 +90,7 @@ impl Widget {
                 fb.draw_rect(rect.x, rect.y, 1, 12, 255, 255, 255);
                 fb.draw_rect(rect.x + 11, rect.y, 1, 12, 255, 255, 255);
                 fb.draw_rect(rect.x, rect.y + 11, 12, 1, 255, 255, 255);
-                let _ = fb.draw_text(rect.x + 16, rect.y + 2, label, Color::white());
+                let _ = fb.draw_text(rect.x + 16, rect.y + 2, label, 255, 255, 255);
             }
             Widget::ProgressBar { rect, percent } => {
                 fb.draw_rect(rect.x, rect.y, rect.w, rect.h, 40, 40, 40);

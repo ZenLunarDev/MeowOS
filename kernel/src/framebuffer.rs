@@ -4,11 +4,11 @@ use uefi::Status;
 
 #[derive(Debug, Clone, Copy)]
 pub struct FrameBuffer {
-    ptr: *mut u8,
-    width: usize,
-    height: usize,
-    stride: usize,
-    pixel_format: PixelFormat,
+    pub ptr: *mut u8,
+    pub width: usize,
+    pub height: usize,
+    pub stride: usize,
+    pub pixel_format: PixelFormat,
 }
 
 const FONT: &[u8] = &[
