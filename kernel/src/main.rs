@@ -3,7 +3,6 @@
 
 use log::info;
 use uefi::{boot, entry, prelude::*};
-use uefi::proto::console::text::{Input, Output};
 
 mod allocator;
 mod framebuffer;
@@ -30,13 +29,10 @@ fn main() -> Status {
 
         FB.draw_text(50, 50, "MeowOS Kernel v0.3", 255, 255, 255);
 
-        let stdout_handle = boot::get_handle_for_protocol::<Output>().unwrap();
-        let mut output = boot::open_protocol_exclusive::<Output>(stdout_handle).unwrap();
-        let stdin_handle = boot::get_handle_for_protocol::<Input>().unwrap();
-        let mut input = boot::open_protocol_exclusive::<Input>(stdin_handle).unwrap();
+        let stdin_handle = boot::get_handle_for_protocol::<uefi::proto::console::text::Input>().unwrap();
+        let mut input = boot::open_protocol_exclusive::<uefi::proto::console::text::Input>(stdin_handle).unwrap();
 
-        let mut shell = text_shell::TextShell::new(&mut FB, &mut input, &mut output);
+        let mut shell = text_shell::TextShell::new(&mut FB, &mut input);
         shell.run();
     }
-    Status::SUCCESS
 }

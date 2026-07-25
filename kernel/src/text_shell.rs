@@ -4,125 +4,82 @@ use alloc::string::String;
 use crate::framebuffer::FrameBuffer;
 use core::time::Duration;
 use uefi::boot;
-use uefi::proto::console::text::{Input, Key, Output};
-
-const FG: u8 = 220;
-const BG: u8 = 10;
+use uefi::proto::console::text::{Input, Key};
 
 pub struct TextShell<'a> {
     fb: &'a mut FrameBuffer,
     input: &'a mut Input,
-    output: &'a mut Output,
     cursor_x: usize,
     cursor_y: usize,
-    line_h: usize,
-    char_w: usize,
 }
 
 impl<'a> TextShell<'a> {
-    pub fn new(fb: &'a mut FrameBuffer, input: &'a mut Input, output: &'a mut Output) -> Self {
-        Self {
-            fb,
-            input,
-            output,
-            cursor_x: 0,
-            cursor_y: 0,
-            line_h: 10,
-            char_w: 8,
-        }
+    pub const fn new(fb: &'a mut FrameBuffer, input: &'a mut Input) -> Self {
+        Self { fb, input, cursor_x: 4, cursor_y: 4 }
     }
 
     pub fn init(&mut self) {
-        self.fb.clear(BG, BG, BG);
+        self.fb.clear(10, 10, 10);
         self.cursor_x = 4;
         self.cursor_y = 4;
     }
 
-    pub fn draw_cursor(&mut self) {
-        self.fb.draw_rect(self.cursor_x, self.cursor_y + 8, 8, 2, FG, FG, FG);
-    }
-
-    pub fn clear_cursor(&mut self) {
-        self.fb.draw_rect(self.cursor_x, self.cursor_y + 8, 8, 2, BG, BG, BG);
-    }
-
     pub fn write_char(&mut self, c: char) {
-        self.clear_cursor();
         if c == '\n' {
             self.cursor_x = 4;
-            self.cursor_y += self.line_h;
+            self.cursor_y += 10;
         } else {
-            self.fb.draw_char(self.cursor_x, self.cursor_y, c, FG, FG, FG);
-            self.cursor_x += self.char_w;
+            self.fb.draw_char(self.cursor_x, self.cursor_y, c, 220, 220, 220);
+            self.cursor_x += 8;
         }
-        if self.cursor_x + self.char_w >= self.fb.width() {
+        if self.cursor_x + 8 >= self.fb.width() {
             self.cursor_x = 4;
-            self.cursor_y += self.line_h;
+            self.cursor_y += 10;
         }
-        if self.cursor_y + self.line_h >= self.fb.height() {
+        if self.cursor_y + 10 >= self.fb.height() {
             self.scroll_up();
         }
-        self.draw_cursor();
     }
 
     pub fn backspace(&mut self) {
-        self.clear_cursor();
-        if self.cursor_x >= 4 + self.char_w {
-            self.cursor_x -= self.char_w;
-            self.fb.draw_rect(self.cursor_x, self.cursor_y, self.char_w, self.line_h, BG, BG, BG);
+        if self.cursor_x >= 4 + 8 {
+            self.cursor_x -= 8;
+            self.fb.draw_rect(self.cursor_x, self.cursor_y, 8, 10, 10, 10, 10);
         }
-        self.draw_cursor();
     }
 
     pub fn newline(&mut self) {
-        self.clear_cursor();
         self.cursor_x = 4;
-        self.cursor_y += self.line_h;
-        if self.cursor_y + self.line_h >= self.fb.height() {
+        self.cursor_y += 10;
+        if self.cursor_y + 10 >= self.fb.height() {
             self.scroll_up();
         }
-        self.draw_cursor();
-    }
-
-    pub fn write_str(&mut self, s: &str) {
-        for c in s.chars() {
-            if c == '\n' {
-                self.newline();
-            } else {
-                self.write_char(c);
-            }
-        }
-    }
-
-    pub fn write_line(&mut self, s: &str) {
-        self.write_str(s);
-        self.newline();
     }
 
     fn scroll_up(&mut self) {
         let w = self.fb.width();
         let h = self.fb.height();
-        for y in 0..h - self.line_h {
+        for y in 0..h - 10 {
             for x in 0..w {
-                let r = self.fb.read_pixel(x, y + self.line_h);
-                self.fb.draw_pixel(x, y, r.0, r.1, r.2);
+                let (r, g, b) = self.fb.read_pixel(x, y + 10);
+                self.fb.draw_pixel(x, y, r, g, b);
             }
         }
-        for y in h - self.line_h..h {
+        for y in h - 10..h {
             for x in 0..w {
-                self.fb.draw_pixel(x, y, BG, BG, BG);
+                self.fb.draw_pixel(x, y, 10, 10, 10);
             }
         }
-        self.cursor_y -= self.line_h;
+        self.cursor_y -= 10;
     }
 
-    pub fn read_line(&mut self) -> alloc::string::String {
-        use alloc::string::String;
+    pub fn read_line(&mut self) -> String {
         let mut buf = String::new();
         loop {
             match self.input.read_key() {
                 Ok(Some(Key::Printable(c))) => {
-                    let ch: char = c.into();
+                    let code: u16 = c.into();
+                    let ch = Self::uefi_to_ascii(code);
                     if ch == '\r' {
                         self.newline();
                         break;
@@ -137,15 +94,24 @@ impl<'a> TextShell<'a> {
                     }
                 }
                 Ok(Some(Key::Special(_))) => {}
-                Ok(None) => {
-                    boot::stall(Duration::from_millis(10));
-                }
-                Err(_) => {
-                    self.write_line("[err] read");
-                }
+                Ok(None) => boot::stall(Duration::from_millis(10)),
+                Err(_) => boot::stall(Duration::from_millis(10)),
             }
         }
         buf
+    }
+
+    fn uefi_to_ascii(code: u16) -> char {
+        match code {
+            0x0D => '\r',
+            0x08 => '\u{8}',
+            0x20 => ' ',
+            0x21..=0x7E => (code as u8) as char,
+            _ if code >= 0x41 && code <= 0x5A => (code as u8) as char,
+            _ if code >= 0x61 && code <= 0x7A => (code as u8) as char,
+            _ if code >= 0x30 && code <= 0x39 => (code as u8) as char,
+            _ => '\0',
+        }
     }
 
     pub fn run(&mut self) -> ! {
@@ -167,8 +133,8 @@ impl<'a> TextShell<'a> {
                     self.write_line("  rect   - draw random rects");
                     self.write_line("  clear  - clear screen");
                     self.write_line("  gui    - widget demo");
-                    self.write_line("  mouse  - mouse status");
-                    self.write_line("  shot   - save screenshot");
+                    self.write_line("  mouse  - mouse init");
+                    self.write_line("  shot   - screenshot");
                     self.write_line("  exit   - halt");
                 }
                 "rect" => {
@@ -182,21 +148,12 @@ impl<'a> TextShell<'a> {
                     self.fb.draw_rect(rx, ry, 60 + (rng % 140) as usize, 40 + (rng % 100) as usize, r_, g_, b_);
                     self.write_line("rect done");
                 }
-                "clear" => {
-                    self.init();
-                }
+                "clear" => self.init(),
                 "gui" => {
-                    use crate::gui::Widget;
                     self.write_line("Widgets Demo:");
-                    let widgets = [
-                        Widget::Button { rect: crate::gui::Rect { x: 4, y: 40, w: 120, h: 30 }, label: "Submit", pressed: false },
-                        Widget::Checkbox { rect: crate::gui::Rect { x: 140, y: 40, w: 120, h: 20 }, label: "Enable", checked: true },
-                        Widget::ProgressBar { rect: crate::gui::Rect { x: 4, y: 80, w: 260, h: 20 }, percent: 65 },
-                    ];
-                    for w in &widgets {
-                        w.draw(self.fb);
-                        self.newline();
-                    }
+                    let _ = self.fb.draw_char(4, 40, 'B', 255, 80, 80);
+                    let _ = self.fb.draw_char(4, 58, 'C', 80, 255, 80);
+                    let _ = self.fb.draw_char(4, 76, 'P', 80, 80, 255);
                 }
                 "mouse" => {
                     let _ = crate::mouse::init_mouse();
@@ -211,10 +168,19 @@ impl<'a> TextShell<'a> {
                     loop { boot::stall(Duration::from_secs(1)); }
                 }
                 "" => {}
-                _ => {
-                    self.write_line("unknown command");
-                }
+                _ => self.write_line("unknown command"),
             }
         }
+    }
+
+    fn write_str(&mut self, s: &str) {
+        for c in s.chars() {
+            self.write_char(c);
+        }
+    }
+
+    fn write_line(&mut self, s: &str) {
+        self.write_str(s);
+        self.newline();
     }
 }

@@ -78,30 +78,19 @@ impl FrameBuffer {
     pub fn height(&self) -> usize { self.height }
 
     pub fn draw_pixel(&mut self, x: usize, y: usize, r: u8, g: u8, b: u8) {
-        if x >= self.width || y >= self.height || self.ptr.is_null() {
-            return;
-        }
-        let offset = y * self.stride * 4 + x * 4;
-        unsafe {
-            match self.pixel_format {
-                PixelFormat::Rgb => {
-                    let p = self.ptr.add(offset);
-                    p.write_volatile(r);
-                    p.add(1).write_volatile(g);
-                    p.add(2).write_volatile(b);
-                    p.add(3).write_volatile(0);
-                }
-                PixelFormat::Bgr => {
-                    let p = self.ptr.add(offset);
-                    p.write_volatile(b);
-                    p.add(1).write_volatile(g);
-                    p.add(2).write_volatile(r);
-                    p.add(3).write_volatile(0);
-                }
-                _ => {}
-            }
-        }
+    if x >= self.width || y >= self.height || self.ptr.is_null() {
+        return;
     }
+    let offset = y * self.stride * 4 + x * 4;
+    unsafe {
+        // ลองเขียนแบบ raw ไม่เช็ค pixel format
+        let p = self.ptr.add(offset);
+        p.write_volatile(r);
+        p.add(1).write_volatile(g);
+        p.add(2).write_volatile(b);
+        p.add(3).write_volatile(0);
+    }
+}
 
     pub fn draw_rect(&mut self, x: usize, y: usize, w: usize, h: usize, r: u8, g: u8, b: u8) {
         for dy in 0..h {
@@ -227,6 +216,8 @@ impl FrameBuffer {
             for col in 0..7 {
                 if (byte >> (6 - col)) & 1 == 1 {
                     self.draw_pixel(x + col, y + row, r, g, b);
+                } else {
+                    self.draw_pixel(x + col, y + row, 40, 40, 40);
                 }
             }
         }
