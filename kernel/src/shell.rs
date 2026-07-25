@@ -1,5 +1,5 @@
 use crate::framebuffer::FrameBuffer;
-use crate::gui;
+use crate::gui::{self, Widget};
 use crate::mouse;
 use crate::screenshot;
 use core::fmt::Write;
