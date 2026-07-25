@@ -155,4 +155,4 @@ QEMU window must be focused. Click inside the VM window before typing shell comm
 
 ## License
 
-MIT OR Apache-2.0
+Proprietary. All rights reserved. See [LICENSE](LICENSE) for details.
