@@ -35,7 +35,7 @@ A bootable OS kernel written **entirely in Rust**. It runs as a UEFI application
 
 ## Boot Experience
 
-Open laptop → black screen → **"Hello from Rust OS!"** appears → no Windows/Linux loading underneath. That's the **"I built my own world"** moment.
+Open laptop → black screen → **"Hello, MeowOS!"** appears → no Windows/Linux loading underneath. That's the **"I built my own world"** moment.
 
 ## Requirements
 

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-uefi = { version = "0.36", features = ["logger", "panic_handler"] }
+uefi = { version = "0.36", features = ["logger", "panic_handler", "alloc"] }
 log = { version = "0.4", default-features = false }
 
 [profile.dev]

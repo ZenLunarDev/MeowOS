@@ -14,7 +14,7 @@ static mut FB: FrameBuffer = FrameBuffer::empty();
 #[entry]
 fn main() -> Status {
     uefi::helpers::init().unwrap();
-    info!("Hello from Rust OS!");
+    info!("Hello, MeowOS!");
     unsafe {
         FB.init().expect("FB init failed");
         FB.draw_rect(100, 100, 200, 150, 0xFF, 0x33, 0x33);
