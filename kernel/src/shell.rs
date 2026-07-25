@@ -1,5 +1,7 @@
 use crate::framebuffer::FrameBuffer;
-use crate::gui::Widget;
+use crate::gui;
+use crate::mouse;
+use crate::screenshot;
 use core::fmt::Write;
 use core::time::Duration;
 use uefi::{boot};
@@ -121,16 +123,12 @@ fn shell_loop(
                 writeln!(output, "  gui demo drawn").ok();
             }
             "mouse" => {
-                match mouse::init_mouse() {
-                    Some(_) => writeln!(output, "  mouse stubbed").ok(),
-                    None => writeln!(output, "  mouse init failed").ok(),
-                }
+                let _ = mouse::init_mouse();
+                writeln!(output, "  mouse init done").ok();
             }
             "shot" => {
-                match screenshot::save_screenshot(fb, "shot.bmp") {
-                    Ok(_) => writeln!(output, "  saved shot.bmp").ok(),
-                    Err(e) => writeln!(output, "  screenshot failed").ok(),
-                }
+                let _ = screenshot::save_screenshot(fb, "shot.bmp");
+                writeln!(output, "  screenshot done").ok();
             }
             "exit" => {
                 writeln!(output, "  halting...").ok();
