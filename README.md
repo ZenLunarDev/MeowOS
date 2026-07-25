@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>100% Rust UEFI Kernel</strong><br>
-  Minimal GUI + Interactive Shell<br>
+  Minimal GUI + Interactive Shell + Screenshots<br>
   Boot it. <em>No Windows/Linux underneath.</em>
 </p>
 
@@ -15,6 +15,9 @@
   </a>
   <a href="https://github.com/rust-osdev/uefi-rs">
     <img src="https://img.shields.io/badge/uefi--rs-0.36-green" alt="uefi-rs">
+  </a>
+  <a href="https://github.com/ZenLunarDev/MeowOS/releases">
+    <img src="https://img.shields.io/badge/release-v0.2-orange" alt="Release">
   </a>
 </p>
 
@@ -35,12 +38,20 @@ A bootable OS kernel written **entirely in Rust**. It runs as a UEFI application
 
 ## Boot Experience
 
-Open laptop → black screen → **"Hello, MeowOS!"** appears → no Windows/Linux loading underneath. That's the **"I built my own world"** moment.
+Open laptop → black screen → **"Hello from Rust OS!"** appears → no Windows/Linux loading underneath. That's the **"I built my own world"** moment.
+
+## Features
+
+- **GUI Widgets**: Button, Checkbox, ProgressBar
+- **Interactive Shell**: Type commands directly
+- **Screenshot**: Save framebuffer to BMP
+- **Memory Allocator**: Dynamic allocation in UEFI
+- **Safe Rust**: 100% memory-safe kernel code
 
 ## Requirements
 
 - Rust nightly (`rustup toolchain install nightly`)
-- WSL2 + Ubuntu (for disk image creation)
+- WSL2 + Ubuntu (for building and QEMU boot)
 - QEMU (for testing)
 
 ## Build
@@ -51,30 +62,34 @@ rustup target add x86_64-unknown-uefi --toolchain nightly
 
 # Build kernel
 cd kernel
-cargo +nightly build --target x86_64-unknown-uefi
+cargo +nightly build --target x86_64-unknown-uefi --release
 ```
 
-Output: `target/x86_64-unknown-uefi/debug/mewoos.efi`
+Output: `target/x86_64-unknown-uefi/release/mewoos.efi`
 
 ## Boot in QEMU
 
 ### Option 1: PowerShell script (Windows)
 ```powershell
-# From project root
 .\boot.ps1 -All
 ```
 
-### Option 2: Manual (WSL2/Linux)
+### Option 2: WSL/Linux script
 ```bash
-# Create bootable image
+chmod +x boot.sh
+./boot.sh
+```
+
+### Option 3: Manual WSL
+```bash
 cd /mnt/c/Users/กรมท/Documents/MewoOs
 
-# Mount ESP and copy EFI
-sudo mkdir -p /mnt/tmp_mewoos
-sudo mount -o loop mewoos.img /mnt/tmp_mewoos 2>/dev/null || true
-mkdir -p /mnt/tmp_mewoos/EFI/BOOT
-cp esp/EFI/BOOT/BOOTX64.EFI /mnt/tmp_mewoos/EFI/BOOT/
-sudo umount /mnt/tmp_mewoos 2>/dev/null || true
+# Build
+cargo +nightly build --target x86_64-unknown-uefi --release
+
+# Copy to ESP
+mkdir -p esp/EFI/BOOT
+cp target/x86_64-unknown-uefi/release/mewoos.efi esp/EFI/BOOT/BOOTX64.EFI
 
 # Boot
 qemu-system-x86_64 -display sdl \
@@ -83,7 +98,7 @@ qemu-system-x86_64 -display sdl \
   -m 512M
 ```
 
-### Option 3: Direct ESP folder (no image)
+### Option 4: Direct ESP (no image)
 ```bash
 qemu-system-x86_64 -display sdl \
   -machine q35,smm=on \
@@ -93,13 +108,6 @@ qemu-system-x86_64 -display sdl \
   -m 512M
 ```
 
-## Features
-
-- Framebuffer graphics (RGB rectangles)
-- Interactive text shell
-- Safe Rust kernel code
-- UEFI boot services integration
-
 ## Shell Commands
 
 Once booted, type:
@@ -107,14 +115,25 @@ Once booted, type:
 - `rect` - draw random rectangles
 - `clear` - clear text console
 - `cls` - clear framebuffer
+- `gui` - show widget demo
+- `mouse` - mouse status
+- `shot` - save screenshot as `shot.bmp`
 - `exit` - halt
 
 ## Stack
 
 - Rust nightly
-- [uefi](https://crates.io/crates/uefi) crate
+- [uefi](https://crates.io/crates/uefi) crate v0.36
 - LLD linker
 - `x86_64-unknown-uefi` target
+- Release optimizations: LTO + size optimization (`opt-level = "s"`)
+
+## Binary Size
+
+| Build | Size |
+|-------|------|
+| Debug | ~126 KB |
+| Release (LTO + opt-level=s) | **~43 KB** |
 
 ## Project Structure
 
@@ -122,16 +141,21 @@ Once booted, type:
 MeowOS/
 ├── kernel/
 │   ├── src/
-│   │   ├── main.rs       # Entry point, framebuffer init
-│   │   ├── framebuffer.rs # GOP protocol, pixel drawing
-│   │   └── shell.rs      # Interactive shell loop
+│   │   ├── main.rs         # Entry point, widget demo
+│   │   ├── framebuffer.rs  # GOP protocol, pixel/text drawing
+│   │   ├── gui.rs          # Button, Checkbox, ProgressBar widgets
+│   │   ├── mouse.rs        # Mouse driver stub
+│   │   ├── allocator.rs    # UEFI pool-based memory allocator
+│   │   ├── screenshot.rs   # BMP screenshot saver
+│   │   └── shell.rs        # Interactive shell loop
 │   ├── Cargo.toml
 │   └── .cargo/
-│       └── config.toml   # UEFI target + linker config
+│       └── config.toml     # UEFI target + linker config
 ├── esp/
 │   └── EFI/BOOT/BOOTX64.EFI
-├── boot.ps1             # Build & boot script for Windows
-├── Cargo.toml           # Workspace root
+├── boot.ps1               # Windows build & boot script
+├── boot.sh                # WSL/Linux build & boot script
+├── Cargo.toml             # Workspace root
 └── README.md
 ```
 
