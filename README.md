@@ -1,12 +1,30 @@
 # MeowOS
 
-**100% Rust UEFI Kernel** with minimal GUI and interactive shell.
+<p align="center">
+  <strong>100% Rust UEFI Kernel</strong><br>
+  Minimal GUI + Interactive Shell<br>
+  Boot it. <em>No Windows/Linux underneath.</em>
+</p>
 
-## What this is
+<p align="center">
+  <a href="https://www.rust-lang.org">
+    <img src="https://img.shields.io/badge/Rust-nightly-red?logo=rust" alt="Rust">
+  </a>
+  <a href="https://uefi.org">
+    <img src="https://img.shields.io/badge/UEFI-x86__64-blue" alt="UEFI">
+  </a>
+  <a href="https://github.com/rust-osdev/uefi-rs">
+    <img src="https://img.shields.io/badge/uefi--rs-0.36-green" alt="uefi-rs">
+  </a>
+</p>
 
-A bootable OS kernel written entirely in Rust. It runs as a UEFI application — no Windows, no Linux underneath. When you boot it, you see colored rectangles drawn directly on the framebuffer and a text shell you can type into.
+---
 
-**Creator:** ZenLunarDev
+## What is this?
+
+A bootable OS kernel written **entirely in Rust**. It runs as a UEFI application — no Windows, no Linux underneath. When you boot it, you see colored rectangles drawn directly on the framebuffer and a text shell you can type into.
+
+**Creator:** [ZenLunarDev](https://github.com/ZenLunarDev)
 
 ## Why Rust
 
@@ -15,37 +33,65 @@ A bootable OS kernel written entirely in Rust. It runs as a UEFI application —
 - Memory safety without garbage collection
 - Compiler-enforced safety at the kernel level
 
+## Boot Experience
+
+Open laptop → black screen → **"Hello from Rust OS!"** appears → no Windows/Linux loading underneath. That's the **"I built my own world"** moment.
+
 ## Requirements
 
-- Windows machine with WSL2 (for Linux toolchain)
 - Rust nightly (`rustup toolchain install nightly`)
-- QEMU for testing
+- WSL2 + Ubuntu (for disk image creation)
+- QEMU (for testing)
 
-## Building
+## Build
 
 ```bash
-# Set up the nightly toolchain
+# Add UEFI target
 rustup target add x86_64-unknown-uefi --toolchain nightly
 
-# Build the kernel
+# Build kernel
 cd kernel
 cargo +nightly build --target x86_64-unknown-uefi
 ```
 
 Output: `target/x86_64-unknown-uefi/debug/mewoos.efi`
 
-## Running in QEMU
+## Boot in QEMU
 
-```bash
-# From WSL2 / Linux
-qemu-system-x86_64 \
-  -bios /usr/share/OVMF/OVMF_CODE.fd \
-  -drive format=raw,file=fat:rw:esp \
-  -m 512M \
-  -no-reboot
+### Option 1: PowerShell script (Windows)
+```powershell
+# From project root
+.\boot.ps1 -All
 ```
 
-Or just double-click the `.efi` file on real UEFI hardware.
+### Option 2: Manual (WSL2/Linux)
+```bash
+# Create bootable image
+cd /mnt/c/Users/กรมท/Documents/MewoOs
+
+# Mount ESP and copy EFI
+sudo mkdir -p /mnt/tmp_mewoos
+sudo mount -o loop mewoos.img /mnt/tmp_mewoos 2>/dev/null || true
+mkdir -p /mnt/tmp_mewoos/EFI/BOOT
+cp esp/EFI/BOOT/BOOTX64.EFI /mnt/tmp_mewoos/EFI/BOOT/
+sudo umount /mnt/tmp_mewoos 2>/dev/null || true
+
+# Boot
+qemu-system-x86_64 -display sdl \
+  -bios /usr/share/OVMF/OVMF_CODE_4M.fd \
+  -drive format=raw,file=fat:rw:esp \
+  -m 512M
+```
+
+### Option 3: Direct ESP folder (no image)
+```bash
+qemu-system-x86_64 -display sdl \
+  -machine q35,smm=on \
+  -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd \
+  -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_VARS_4M.fd \
+  -drive format=raw,file=fat:rw:esp \
+  -m 512M
+```
 
 ## Features
 
@@ -54,7 +100,7 @@ Or just double-click the `.efi` file on real UEFI hardware.
 - Safe Rust kernel code
 - UEFI boot services integration
 
-## Commands
+## Shell Commands
 
 Once booted, type:
 - `help` - show commands
@@ -66,10 +112,35 @@ Once booted, type:
 ## Stack
 
 - Rust nightly
-- uefi crate
+- [uefi](https://crates.io/crates/uefi) crate
 - LLD linker
-- x86_64-unknown-uefi target
+- `x86_64-unknown-uefi` target
+
+## Project Structure
+
+```
+MeowOS/
+├── kernel/
+│   ├── src/
+│   │   ├── main.rs       # Entry point, framebuffer init
+│   │   ├── framebuffer.rs # GOP protocol, pixel drawing
+│   │   └── shell.rs      # Interactive shell loop
+│   ├── Cargo.toml
+│   └── .cargo/
+│       └── config.toml   # UEFI target + linker config
+├── esp/
+│   └── EFI/BOOT/BOOTX64.EFI
+├── boot.ps1             # Build & boot script for Windows
+├── Cargo.toml           # Workspace root
+└── README.md
+```
+
+## License
+
+MIT OR Apache-2.0
 
 ---
 
-*Boot it. See "Hello from Rust OS!" on bare metal. No OS required.*
+<p align="center">
+  <em>Built with Rust. Boots on real metal. No OS required.</em>
+</p>
