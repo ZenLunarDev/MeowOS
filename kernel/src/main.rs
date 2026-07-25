@@ -2,14 +2,15 @@
 #![no_std]
 
 use log::info;
-use uefi::{entry, prelude::*};
+use uefi::{boot, entry, prelude::*};
+use uefi::proto::console::text::{Input, Output};
 
 mod allocator;
 mod framebuffer;
 mod gui;
 mod mouse;
 mod screenshot;
-mod shell;
+mod text_shell;
 
 use framebuffer::FrameBuffer;
 
@@ -27,38 +28,15 @@ fn main() -> Status {
         FB.draw_rect(330, 120, 200, 150, 0x33, 0xFF, 0x33);
         FB.draw_rect(560, 140, 200, 150, 0x33, 0x33, 0xFF);
 
-        FB.draw_text(50, 50, "MeowOS Kernel v0.2", 255, 255, 255);
+        FB.draw_text(50, 50, "MeowOS Kernel v0.3", 255, 255, 255);
 
-        let _ = mouse::init_mouse();
+        let stdout_handle = boot::get_handle_for_protocol::<Output>().unwrap();
+        let mut output = boot::open_protocol_exclusive::<Output>(stdout_handle).unwrap();
+        let stdin_handle = boot::get_handle_for_protocol::<Input>().unwrap();
+        let mut input = boot::open_protocol_exclusive::<Input>(stdin_handle).unwrap();
 
-        let widgets = [
-            gui::Widget::Button {
-                rect: gui::Rect { x: 50, y: 300, w: 120, h: 30 },
-                label: "Submit",
-                pressed: false,
-            },
-            gui::Widget::Checkbox {
-                rect: gui::Rect { x: 200, y: 300, w: 120, h: 20 },
-                label: "Enable",
-                checked: true,
-            },
-            gui::Widget::ProgressBar {
-                rect: gui::Rect { x: 50, y: 350, w: 300, h: 20 },
-                percent: 65,
-            },
-            gui::Widget::ProgressBar {
-                rect: gui::Rect { x: 50, y: 380, w: 300, h: 20 },
-                percent: 30,
-            },
-        ];
-
-        for w in &widgets {
-            w.draw(&mut FB);
-        }
-
-        FB.draw_text(50, 420, "Type 'help' for commands", 200, 200, 200);
-
-        shell::run(&mut FB);
+        let mut shell = text_shell::TextShell::new(&mut FB, &mut input, &mut output);
+        shell.run();
     }
     Status::SUCCESS
 }

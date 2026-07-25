@@ -247,4 +247,17 @@ impl FrameBuffer {
             }
         }
     }
+
+    pub fn read_pixel(&self, x: usize, y: usize) -> (u8, u8, u8) {
+        if x >= self.width || y >= self.height || self.ptr.is_null() {
+            return (0, 0, 0);
+        }
+        let offset = y * self.stride * 4 + x * 4;
+        unsafe {
+            let r = *self.ptr.add(offset);
+            let g = *self.ptr.add(offset + 1);
+            let b = *self.ptr.add(offset + 2);
+            (r, g, b)
+        }
+    }
 }
